@@ -9,14 +9,14 @@
       </div>
 
       <div class="campo">
-        <label>Unidade de Compra</label>
+        <label>Unidade</label>
         <select v-model="formulario.unidadeCompra">
           <option v-for="u in todasUnidades" :key="u" :value="u">{{ u }}</option>
         </select>
       </div>
 
       <div class="campo">
-        <label>Quantidade de Compra</label>
+        <label>Quantidade</label>
         <input
           type="number"
           min="0"
@@ -27,7 +27,7 @@
       </div>
 
       <div class="campo">
-        <label>Preço pago (R$)</label>
+        <label>Preço (R$)</label>
         <input
           type="number"
           min="0"
@@ -52,7 +52,7 @@
         <span class="custo-base-preview" v-if="custoBaseFormulario !== null">
           Custo base: {{ formatarMoeda(custoBaseFormulario) }} / {{ unidadeBaseDoFormulario }}
         </span>
-        <button type="submit">{{ editandoId ? 'Salvar alterações' : 'Adicionar ingrediente' }}</button>
+        <button type="submit">{{ editandoId ? 'Salvar alterações' : 'Adicionar' }}</button>
         <button type="button" v-if="editandoId" @click="cancelar">Cancelar</button>
       </div>
     </form>

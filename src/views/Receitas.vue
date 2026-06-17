@@ -30,7 +30,7 @@
         </div>
         <div class="flex-row">
           <div class="campo">
-            <label>Rendimento</label>
+            <label>Rende quanto? (ex: 10 fatias)</label>
             <input type="number" v-model.number="receitaSelecionada.rendimento" @change="salvar" />
           </div>
           <div class="campo">
@@ -44,7 +44,7 @@
 
       <div class="card">
         <h3>Ingredientes</h3>
-        <table class="tabela-itens">
+        <table class="tabela-itens" v-show="receitaSelecionada.itens.length">
           <thead>
             <tr>
               <th>Ingrediente</th>
@@ -89,7 +89,7 @@
 			    </span>
 			  </div>
 			</div>
-          <button type="submit" :disabled="!ingredientes.length">Adicionar item</button>
+          <button type="submit" :disabled="!ingredientes.length">Adicionar Ingrediente</button>
         </form>
 
         <p v-if="!ingredientes.length" class="dica">Cadastre ingredientes primeiro pra poder usá-los aqui.</p>
@@ -467,7 +467,7 @@ button:disabled {
     height: auto;
   }
   .lista-receitas {
-    height: 130px;
+    max-height: 230px;
   }
   .add-item {
     flex-wrap: wrap;
