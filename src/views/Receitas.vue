@@ -83,15 +83,25 @@
               <option v-for="i in ingredientes" :key="i.id" :value="i.id">{{ i.nome }}</option>
             </select>
           </div>
-          <div class="campo">
-            <label>Qtd</label>
-            <input type="number" step="any" v-model.number="novoItem.quantidade" required />
-          </div>
-          <div class="campo">
-            <label>{{ unidadeBaseNovoItem || 'unidade' }}</label>
-          </div>
+			<div class="campo">
+			  <label>Quantidade</label>
+
+			  <div class="qtd-com-unidade">
+			    <input
+			      type="number"
+			      step="any"
+			      v-model.number="novoItem.quantidade"
+			      required
+			    />
+
+			    <span class="unidade-label">
+			      {{ unidadeBaseNovoItem || 'unidade' }}
+			    </span>
+			  </div>
+			</div>
           <button type="submit" :disabled="!ingredientes.length">Adicionar item</button>
         </form>
+
         <p v-if="!ingredientes.length" class="dica">Cadastre ingredientes primeiro pra poder usá-los aqui.</p>
       </div>
 
@@ -119,7 +129,6 @@
                 v-model.number="receitaSelecionada.markup"
                 @change="salvar"
               />
-              <span>x</span>
             </div>
           </div>
           <hr />
@@ -132,14 +141,6 @@
             {{ formatarMoeda(resultadoPreco.custoTotal / (receitaSelecionada.rendimento || 1)) }}
           </dd>
         </dl>
-
-        <div class="venda-estoque">
-          <div class="campo-inline">
-            <label>Vender/Produzir (qtd):</label>
-            <input type="number" v-model.number="quantidadeVenda" min="1" />
-          </div>
-          <button @click="realizarVenda" class="btn-venda">Baixar do estoque</button>
-        </div>
       </div>
     </div>
     <div class="sem-selecao" v-else>
@@ -161,7 +162,6 @@ export default {
       config: db.getConfig(),
       receitaSelecionada: null,
       novoItem: { ingredienteId: '', quantidade: null, unidade: '' },
-      quantidadeVenda: 1,
       unidadesRendimento: ['fatias', 'unidade', 'pedaços', 'cento', 'potes', 'caixas', 'kg', 'g'],
       customUnidade: '',
     };
@@ -236,11 +236,6 @@ export default {
     removerItem(idx) {
       this.receitaSelecionada.itens.splice(idx, 1);
       this.salvar();
-    },
-    realizarVenda() {
-      venderReceita(this.receitaSelecionada, this.buscarIngrediente, this.quantidadeVenda);
-      db.setIngredientes(this.ingredientes);
-      alert('Estoque atualizado com sucesso!');
     },
     aplicarCustomUnidade() {
       if (this.customUnidade.trim()) {
@@ -481,6 +476,21 @@ button:disabled {
   background: #ccc;
   cursor: not-allowed;
 }
+.qtd-com-unidade {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.qtd-com-unidade input {
+  width: 80px;
+}
+
+.unidade-label {
+  font-size: 0.9rem;
+  color: #666;
+  white-space: nowrap;
+}
 
 @media (max-width: 800px) {
   .receitas {
@@ -488,23 +498,19 @@ button:disabled {
     height: auto;
   }
   .lista-receitas {
-    height: 200px;
+    height: 130px;
   }
   .add-item {
     flex-wrap: wrap;
   }
+  .add-item .campo {
+	flex: 1 1 100%;
+  }
+  .add-item select,
+  .add-item input {
+	width: 100%;
+  }
+
 }
 </style>
-x-width: 800px) {
-  .receitas {
-    grid-template-columns: 1fr;
-    height: auto;
-  }
-  .lista-receitas {
-    height: 200px;
-  }
-  .add-item {
-    flex-wrap: wrap;
-  }
-}
-</style>
+
