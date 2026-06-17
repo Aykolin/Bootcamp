@@ -193,7 +193,6 @@ export default {
 <style scoped>
 .ingredientes {
   max-width: 800px;
-  padding-inline: 16px;
 }
 
 .form-card {
