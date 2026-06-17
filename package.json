@@ -2,21 +2,20 @@
   "name": "confeit-o-matic",
   "version": "0.1.0",
   "private": true,
-  "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && electron-builder"
+    "build": "vite build",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:open": "npm run android:sync && npx cap open android"
   },
   "dependencies": {
-    "electron-store": "8.2.0",
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/core": "^6.1.2",
     "vue": "2.7.16"
   },
   "devDependencies": {
+    "@capacitor/cli": "^6.1.2",
     "@vitejs/plugin-vue2": "^2.3.1",
-    "electron": "^31.0.0",
-    "electron-builder": "^24.13.3",
-    "vite": "^5.3.1",
-    "vite-plugin-electron": "^0.28.7",
-    "vite-plugin-electron-renderer": "^0.14.5"
+    "vite": "^5.3.1"
   }
 }

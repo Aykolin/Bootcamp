@@ -1,365 +1,470 @@
 <template>
-  <div class="tela-receitas">
-    <div class="coluna-lista">
-      <h2>Receitas</h2>
-
-      <button class="botao-nova" @click="novaReceita">+ Nova receita</button>
-
-      <ul class="lista-receitas">
-        <li
+  <div class="receitas">
+    <div class="lista-receitas">
+      <div class="topo-lista">
+        <h2>Receitas</h2>
+        <button @click="novaReceita">Nova receita</button>
+      </div>
+      <div class="scroll-lista">
+        <div
           v-for="r in receitas"
           :key="r.id"
-          :class="{ ativa: r.id === receitaSelecionadaId }"
-          @click="selecionar(r.id)"
+          class="item-receita"
+          :class="{ ativa: receitaSelecionada && r.id === receitaSelecionada.id }"
+          @click="selecionarReceita(r)"
         >
-          <strong>{{ r.nome }}</strong>
-          <span>{{ r.rendimento }} {{ r.unidadeRendimento }}</span>
-        </li>
-      </ul>
-      <p v-if="!receitas.length">Nenhuma receita cadastrada ainda.</p>
-    </div>
-
-    <div class="coluna-detalhe" v-if="formulario">
-      <form class="form-card" @submit.prevent="salvarReceita">
-        <div class="campo">
-          <label>Nome</label>
-          <input v-model="formulario.nome" required placeholder="ex.: Bolo de cenoura" />
-        </div>
-        <div class="campo">
-          <label>Rendimento</label>
-          <input type="number" min="1" step="1" v-model.number="formulario.rendimento" required />
-        </div>
-        <div class="campo">
-          <label>Unidade do rendimento</label>
-          <input v-model="formulario.unidadeRendimento" required placeholder="ex.: fatias" />
-        </div>
-        <div class="campo">
-          <label>Margem (%)</label>
-          <input type="number" min="0" step="any" v-model.number="formulario.margem" required />
-        </div>
-        <div class="campo">
-          <label>Custos adicionais por lote (R$)</label>
-          <input
-            type="number"
-            min="0"
-            step="any"
-            v-model.number="formulario.custosAdicionais"
-          />
-        </div>
-        <div class="acoes-form">
-          <button type="submit">{{ editandoId ? 'Salvar alterações' : 'Criar receita' }}</button>
-          <button type="button" v-if="editandoId" @click="cancelarEdicao">Cancelar</button>
-        </div>
-      </form>
-    </div>
-
-    <div class="coluna-detalhe" v-else-if="receitaSelecionada">
-      <div class="cabecalho-detalhe">
-        <h3>{{ receitaSelecionada.nome }}</h3>
-        <div class="acoes-form">
-          <button @click="editarReceita(receitaSelecionada)">Editar</button>
-          <button class="perigo" @click="excluirReceita(receitaSelecionada.id)">Excluir</button>
+          <div class="info">
+            <strong>{{ r.nome }}</strong>
+            <span>Rendimento: {{ r.rendimento }} {{ r.unidadeRendimento }}</span>
+          </div>
+          <button class="perigo btn-mini" @click.stop="excluirReceita(r.id)">×</button>
         </div>
       </div>
-      <p class="info-receita">
-        Rendimento: {{ receitaSelecionada.rendimento }} {{ receitaSelecionada.unidadeRendimento }}
-        · Margem: {{ receitaSelecionada.margem }}% · Custos adicionais:
-        {{ formatarMoeda(receitaSelecionada.custosAdicionais) }}
-      </p>
+    </div>
 
-      <h4>Itens da receita</h4>
-      <table class="lista" v-if="receitaSelecionada.itens.length">
-        <thead>
-          <tr>
-            <th>Insumo</th>
-            <th>Quantidade</th>
-            <th>Custo do item</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(item, indice) in receitaSelecionada.itens" :key="indice">
-            <td>{{ nomeInsumo(item.insumoId) }}</td>
-            <td>{{ item.quantidade }} {{ item.unidade }}</td>
-            <td>{{ formatarMoeda(custoDoItem(item)) }}</td>
-            <td>
-              <button class="perigo" @click="removerItem(indice)">Remover</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <p v-else>Nenhum item adicionado ainda.</p>
-
-      <form class="form-card" @submit.prevent="adicionarItem">
+    <div class="detalhe-receita" v-if="receitaSelecionada">
+      <div class="card">
         <div class="campo">
-          <label>Insumo</label>
-          <select v-model="novoItem.insumoId" required>
-            <option value="" disabled>Selecione</option>
-            <option v-for="i in insumos" :key="i.id" :value="i.id">{{ i.nome }}</option>
-          </select>
+          <label>Nome da receita</label>
+          <input v-model="receitaSelecionada.nome" @change="salvar" />
         </div>
-        <div class="campo">
-          <label>Quantidade {{ unidadeBaseDoNovoItem ? `(${unidadeBaseDoNovoItem})` : '' }}</label>
-          <input type="number" min="0" step="any" v-model.number="novoItem.quantidade" required />
+        <div class="flex-row">
+          <div class="campo">
+            <label>Rendimento</label>
+            <input type="number" v-model.number="receitaSelecionada.rendimento" @change="salvar" />
+          </div>
+          <div class="campo">
+            <label>Unidade</label>
+            <div class="unidade-rendimento-wrap">
+              <select v-model="receitaSelecionada.unidadeRendimento" @change="salvar">
+                <option v-for="opt in unidadesRendimento" :key="opt" :value="opt">{{ opt }}</option>
+                <option value="custom">Outro...</option>
+              </select>
+              <input 
+                v-if="mostrarCustomUnidade" 
+                v-model="customUnidade" 
+                @blur="aplicarCustomUnidade"
+                placeholder="Qual?"
+                class="input-custom"
+              />
+            </div>
+          </div>
         </div>
-        <div class="acoes-form">
-          <button type="submit" :disabled="!insumos.length">Adicionar item</button>
-        </div>
-      </form>
-      <p v-if="!insumos.length" class="dica">Cadastre insumos primeiro pra poder usá-los aqui.</p>
+      </div>
 
-      <div class="painel-preco" v-if="resultadoPreco">
-        <h4>Preço</h4>
-        <dl>
-          <dt>Custo dos insumos</dt>
-          <dd>{{ formatarMoeda(resultadoPreco.custoInsumos) }}</dd>
-          <dt>Rateio de custos fixos</dt>
-          <dd>{{ formatarMoeda(resultadoPreco.rateioFixos) }}</dd>
-          <dt>Custo total</dt>
-          <dd>{{ formatarMoeda(resultadoPreco.custoTotal) }}</dd>
-          <dt>Preço sugerido</dt>
-          <dd class="destaque">{{ formatarMoeda(resultadoPreco.precoSugerido) }}</dd>
-          <dt>Custo por {{ unidadeSingular }}</dt>
-          <dd>{{ formatarMoeda(resultadoPreco.custoPorPorcao) }}</dd>
-          <dt>Preço por {{ unidadeSingular }}</dt>
-          <dd>{{ formatarMoeda(resultadoPreco.precoPorPorcao) }}</dd>
+      <div class="card">
+        <h3>Ingredientes</h3>
+        <table class="tabela-itens">
+          <thead>
+            <tr>
+              <th>Ingrediente</th>
+              <th>Qtd</th>
+              <th>Custo</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(item, idx) in receitaSelecionada.itens" :key="idx">
+              <td>{{ nomeIngrediente(item.ingredienteId) }}</td>
+              <td>{{ item.quantidade }} {{ item.unidade }}</td>
+              <td>{{ formatarMoeda(custoItem(item)) }}</td>
+              <td>
+                <button class="perigo btn-mini" @click="removerItem(idx)">×</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <form class="add-item" @submit.prevent="adicionarItem">
+          <div class="campo">
+            <label>Ingrediente</label>
+            <select v-model="novoItem.ingredienteId" required>
+              <option disabled value="">Selecione...</option>
+              <option v-for="i in ingredientes" :key="i.id" :value="i.id">{{ i.nome }}</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label>Qtd</label>
+            <input type="number" step="any" v-model.number="novoItem.quantidade" required />
+          </div>
+          <div class="campo">
+            <label>{{ unidadeBaseNovoItem || 'unidade' }}</label>
+          </div>
+          <button type="submit" :disabled="!ingredientes.length">Adicionar item</button>
+        </form>
+        <p v-if="!ingredientes.length" class="dica">Cadastre ingredientes primeiro pra poder usá-los aqui.</p>
+      </div>
+
+      <div class="card">
+        <h3>Resumo Financeiro</h3>
+        <dl class="resumo">
+          <dt>Custo dos ingredientes</dt>
+          <dd>{{ formatarMoeda(resultadoPreco.custoIngredientes) }}</dd>
+          <div class="campo-inline">
+            <dt>Outros custos (R$)</dt>
+            <input
+              type="number"
+              step="any"
+              v-model.number="receitaSelecionada.custosAdicionais"
+              @change="salvar"
+            />
+          </div>
+          <div class="campo-inline lucro-campo">
+            <dt>Lucro desejado (Markup)</dt>
+            <div class="markup-input">
+              <input
+                type="number"
+                step="0.1"
+                min="1"
+                v-model.number="receitaSelecionada.markup"
+                @change="salvar"
+              />
+              <span>x</span>
+            </div>
+          </div>
+          <hr />
+          <dt class="total">Custo Total</dt>
+          <dd class="total">{{ formatarMoeda(resultadoPreco.custoTotal) }}</dd>
+          <dt>Preço Sugerido</dt>
+          <dd class="sugerido">{{ formatarMoeda(resultadoPreco.precoSugerido) }}</dd>
+          <dt class="unitario">Custo por {{ receitaSelecionada.unidadeRendimento }}</dt>
+          <dd class="unitario">
+            {{ formatarMoeda(resultadoPreco.custoTotal / (receitaSelecionada.rendimento || 1)) }}
+          </dd>
         </dl>
 
-        <div class="venda">
-          <label>Vender</label>
-          <input type="number" min="1" step="1" v-model.number="quantidadeVenda" />
-          <span>lote(s) de {{ receitaSelecionada.rendimento }} {{ receitaSelecionada.unidadeRendimento }}</span>
-          <button @click="vender" :disabled="!receitaSelecionada.itens.length">Vender</button>
+        <div class="venda-estoque">
+          <div class="campo-inline">
+            <label>Vender/Produzir (qtd):</label>
+            <input type="number" v-model.number="quantidadeVenda" min="1" />
+          </div>
+          <button @click="realizarVenda" class="btn-venda">Baixar do estoque</button>
         </div>
-        <p v-if="mensagemVenda" class="mensagem-venda">{{ mensagemVenda }}</p>
       </div>
     </div>
-
-    <div class="coluna-detalhe vazia" v-else>
-      <p>Selecione uma receita na lista ou crie uma nova.</p>
+    <div class="sem-selecao" v-else>
+      <p>Selecione uma receita ao lado ou crie uma nova.</p>
     </div>
   </div>
 </template>
 
 <script>
 import db from '../db';
-import { calcularReceita, converterParaBase, custoItem, venderReceita } from '../calc';
-
-function formularioVazio() {
-  return {
-    nome: '',
-    rendimento: null,
-    unidadeRendimento: '',
-    margem: 0,
-    custosAdicionais: 0,
-    itens: [],
-  };
-}
+import { calcularReceita, custoItem, venderReceita, converterParaBase } from '../calc';
 
 export default {
   name: 'Receitas',
   data() {
     return {
       receitas: db.getReceitas(),
-      insumos: db.getInsumos(),
-      custosFixos: db.getCustosFixos(),
+      ingredientes: db.getIngredientes(),
       config: db.getConfig(),
-      receitaSelecionadaId: null,
-      editandoId: null,
-      formulario: null,
-      novoItem: { insumoId: '', quantidade: null, unidade: '' },
+      receitaSelecionada: null,
+      novoItem: { ingredienteId: '', quantidade: null, unidade: '' },
       quantidadeVenda: 1,
-      mensagemVenda: '',
+      unidadesRendimento: ['fatias', 'unidade', 'pedaços', 'cento', 'potes', 'caixas', 'kg', 'g'],
+      customUnidade: '',
     };
   },
   computed: {
-    receitaSelecionada() {
-      return this.receitas.find((r) => r.id === this.receitaSelecionadaId) || null;
-    },
-    unidadeSingular() {
-      if (!this.receitaSelecionada) return '';
-      return this.receitaSelecionada.unidadeRendimento;
-    },
-    unidadeBaseDoNovoItem() {
-      const insumo = this.insumos.find((i) => i.id === this.novoItem.insumoId);
-      return insumo ? converterParaBase(1, insumo.unidadeCompra).unidadeBase : '';
+    mostrarCustomUnidade() {
+      return this.receitaSelecionada && 
+             (this.receitaSelecionada.unidadeRendimento === 'custom' || 
+              !this.unidadesRendimento.includes(this.receitaSelecionada.unidadeRendimento));
     },
     resultadoPreco() {
-      if (!this.receitaSelecionada) return null;
+      if (!this.receitaSelecionada) return {};
       return calcularReceita(
         this.receitaSelecionada,
-        this.buscarInsumo,
-        this.custosFixos,
-        this.config
+        this.buscarIngrediente,
+        this.receitaSelecionada.markup || this.config.markup || 2
       );
+    },
+    unidadeBaseNovoItem() {
+      const ingrediente = this.ingredientes.find((i) => i.id === this.novoItem.ingredienteId);
+      return ingrediente ? converterParaBase(1, ingrediente.unidadeCompra).unidadeBase : '';
     },
   },
   methods: {
-    buscarInsumo(id) {
-      return this.insumos.find((i) => i.id === id);
+    buscarIngrediente(id) {
+      return this.ingredientes.find((i) => i.id === id);
     },
-    nomeInsumo(id) {
-      const insumo = this.buscarInsumo(id);
-      return insumo ? insumo.nome : '(insumo removido)';
+    nomeIngrediente(id) {
+      const ingrediente = this.buscarIngrediente(id);
+      return ingrediente ? ingrediente.nome : '(ingrediente removido)';
     },
-    custoDoItem(item) {
-      const insumo = this.buscarInsumo(item.insumoId);
-      return insumo ? custoItem(item, insumo) : 0;
+    custoItem(item) {
+      const ingrediente = this.buscarIngrediente(item.ingredienteId);
+      return ingrediente ? custoItem(item, ingrediente) : 0;
     },
     formatarMoeda(valor) {
       return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
         valor || 0
       );
     },
-    selecionar(id) {
-      this.receitaSelecionadaId = id;
-      this.formulario = null;
-      this.editandoId = null;
-      this.mensagemVenda = '';
+    selecionarReceita(r) {
+      this.receitaSelecionada = r;
     },
     novaReceita() {
-      this.receitaSelecionadaId = null;
-      this.editandoId = null;
-      this.formulario = formularioVazio();
-    },
-    editarReceita(receita) {
-      this.editandoId = receita.id;
-      this.formulario = { ...receita, itens: receita.itens.slice() };
-    },
-    cancelarEdicao() {
-      this.formulario = null;
-      this.editandoId = null;
-    },
-    salvarReceita() {
-      if (this.editandoId) {
-        const indice = this.receitas.findIndex((r) => r.id === this.editandoId);
-        this.receitas.splice(indice, 1, { ...this.formulario, id: this.editandoId });
-        this.receitaSelecionadaId = this.editandoId;
-      } else {
-        const nova = { ...this.formulario, id: Date.now().toString() };
-        this.receitas.push(nova);
-        this.receitaSelecionadaId = nova.id;
-      }
-      db.setReceitas(this.receitas);
-      this.formulario = null;
-      this.editandoId = null;
+      const nova = {
+        id: Date.now().toString(),
+        nome: 'Nova Receita',
+        rendimento: 1,
+        unidadeRendimento: 'unidade',
+        itens: [],
+        custosAdicionais: 0,
+        markup: 2,
+      };
+      this.receitas.push(nova);
+      this.receitaSelecionada = nova;
+      this.salvar();
     },
     excluirReceita(id) {
       this.receitas = this.receitas.filter((r) => r.id !== id);
-      db.setReceitas(this.receitas);
-      if (this.receitaSelecionadaId === id) this.receitaSelecionadaId = null;
+      if (this.receitaSelecionada?.id === id) this.receitaSelecionada = null;
+      this.salvar();
     },
     adicionarItem() {
+      const ingrediente = this.buscarIngrediente(this.novoItem.ingredienteId);
       this.receitaSelecionada.itens.push({
         ...this.novoItem,
-        unidade: this.unidadeBaseDoNovoItem,
+        unidade: converterParaBase(1, ingrediente.unidadeCompra).unidadeBase,
       });
-      db.setReceitas(this.receitas);
-      this.novoItem = { insumoId: '', quantidade: null, unidade: '' };
+      this.salvar();
+      this.novoItem = { ingredienteId: '', quantidade: null, unidade: '' };
     },
-    removerItem(indice) {
-      this.receitaSelecionada.itens.splice(indice, 1);
-      db.setReceitas(this.receitas);
+    removerItem(idx) {
+      this.receitaSelecionada.itens.splice(idx, 1);
+      this.salvar();
     },
-    vender() {
-      const lancamento = venderReceita(
-        this.receitaSelecionada,
-        this.buscarInsumo,
-        this.quantidadeVenda,
-        this.resultadoPreco.precoSugerido
-      );
-      db.setInsumos(this.insumos);
-      const caixa = db.getCaixa();
-      caixa.push(lancamento);
-      db.setCaixa(caixa);
-      this.mensagemVenda = `Venda registrada: ${this.formatarMoeda(lancamento.valor)} no caixa.`;
+    realizarVenda() {
+      venderReceita(this.receitaSelecionada, this.buscarIngrediente, this.quantidadeVenda);
+      db.setIngredientes(this.ingredientes);
+      alert('Estoque atualizado com sucesso!');
+    },
+    aplicarCustomUnidade() {
+      if (this.customUnidade.trim()) {
+        this.receitaSelecionada.unidadeRendimento = this.customUnidade.trim();
+        this.customUnidade = '';
+        this.salvar();
+      }
+    },
+    salvar() {
+      db.setReceitas(this.receitas);
     },
   },
 };
 </script>
 
 <style scoped>
-.tela-receitas {
+.unidade-rendimento-wrap {
   display: flex;
+  gap: 4px;
+}
+.input-custom {
+  width: 80px !important;
+  padding: 4px 8px !important;
+}
+.receitas {
+  display: grid;
+  grid-template-columns: 280px 1fr;
   gap: 20px;
-  align-items: flex-start;
-}
-.coluna-lista {
-  width: 260px;
-  flex-shrink: 0;
-}
-.coluna-detalhe {
-  flex: 1;
-  min-width: 0;
-}
-.coluna-detalhe.vazia {
-  color: #6b7280;
-}
-.botao-nova {
-  width: 100%;
-  margin-bottom: 12px;
+  height: calc(100vh - 120px);
 }
 .lista-receitas {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.lista-receitas li {
   background: white;
-  border-radius: 6px;
-  padding: 10px 12px;
-  cursor: pointer;
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
-.lista-receitas li.ativa {
-  outline: 2px solid #d97a8c;
-}
-.lista-receitas li span {
-  font-size: 0.8rem;
-  color: #6b7280;
-}
-.cabecalho-detalhe {
+.topo-lista {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-.info-receita {
-  color: #6b7280;
-  font-size: 0.9rem;
+.topo-lista h2 {
+  margin: 0;
+  font-size: 1rem;
 }
-.form-card {
+.scroll-lista {
+  flex: 1;
+  overflow-y: auto;
+}
+.item-receita {
+  padding: 12px;
+  border-bottom: 1px solid #f9f9f9;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.item-receita:hover {
+  background: #fff8f8;
+}
+.item-receita.ativa {
+  background: #fdf2f4;
+  border-left: 4px solid #d97a8c;
+}
+.item-receita .info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.item-receita .info span {
+  font-size: 0.75rem;
+  color: #888;
+}
+.detalhe-receita {
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.card {
   background: white;
   border-radius: 8px;
   padding: 16px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: flex-end;
   margin-bottom: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.card h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 1rem;
+  color: #d97a8c;
 }
 .campo {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 0.85rem;
+  margin-bottom: 12px;
+}
+.campo label {
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #666;
 }
 .campo input,
 .campo select {
-  padding: 6px 8px;
+  padding: 8px;
   border: 1px solid #ddd;
   border-radius: 4px;
+}
+.flex-row {
+  display: flex;
+  gap: 12px;
+}
+.flex-row .campo {
+  flex: 1;
+}
+.tabela-itens {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+}
+.tabela-itens th {
+  text-align: left;
+  font-size: 0.8rem;
+  color: #888;
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+}
+.tabela-itens td {
+  padding: 8px;
+  border-bottom: 1px solid #f9f9f9;
   font-size: 0.9rem;
 }
-.acoes-form {
+.add-item {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  background: #fdfaf8;
+  padding: 10px;
+  border-radius: 6px;
+}
+.add-item .campo {
+  margin-bottom: 0;
+}
+.add-item select {
+  width: 150px;
+}
+.add-item input {
+  width: 80px;
+}
+.resumo dt {
+  font-size: 0.85rem;
+  color: #666;
+  float: left;
+  clear: left;
+}
+.resumo dd {
+  font-size: 0.85rem;
+  text-align: right;
+  margin-bottom: 6px;
+}
+.resumo .total {
+  font-weight: bold;
+  font-size: 1rem;
+  color: #333;
+  margin-top: 8px;
+}
+.resumo .sugerido {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: #2e7d32;
+}
+.resumo .unitario {
+  font-size: 0.8rem;
+  color: #888;
+}
+.campo-inline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.campo-inline input {
+  width: 80px;
+  text-align: right;
+  padding: 4px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+.markup-input {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 4px;
+}
+.markup-input span {
+  font-weight: bold;
+  color: #d97a8c;
+}
+.venda-estoque {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 2px dashed #eee;
+}
+.btn-venda {
+  width: 100%;
+  background: #2e7d32;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-top: 8px;
+}
+.btn-mini {
+  padding: 2px 6px;
+  font-size: 0.8rem;
+}
+.dica {
+  font-size: 0.8rem;
+  color: #d97a8c;
+  font-style: italic;
 }
 button {
   background: #d97a8c;
@@ -369,70 +474,37 @@ button {
   border-radius: 6px;
   cursor: pointer;
 }
+button.perigo {
+  background: #b3413a;
+}
 button:disabled {
   background: #ccc;
   cursor: not-allowed;
 }
-button.perigo {
-  background: #b3413a;
+
+@media (max-width: 800px) {
+  .receitas {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .lista-receitas {
+    height: 200px;
+  }
+  .add-item {
+    flex-wrap: wrap;
+  }
 }
-.lista {
-  width: 100%;
-  border-collapse: collapse;
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  margin-bottom: 16px;
-}
-.lista th,
-.lista td {
-  padding: 8px 12px;
-  text-align: left;
-  border-bottom: 1px solid #f0e7e2;
-  font-size: 0.9rem;
-}
-.dica {
-  font-size: 0.8rem;
-  color: #6b7280;
-}
-.painel-preco {
-  background: white;
-  border-radius: 8px;
-  padding: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-.painel-preco dl {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 4px 16px;
-  margin: 0 0 16px;
-}
-.painel-preco dt {
-  color: #6b7280;
-  font-size: 0.85rem;
-}
-.painel-preco dd {
-  margin: 0;
-  font-weight: 600;
-}
-.painel-preco dd.destaque {
-  color: #d97a8c;
-  font-size: 1.1rem;
-}
-.venda {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.venda input {
-  width: 60px;
-  padding: 6px 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-.mensagem-venda {
-  margin-top: 10px;
-  color: #2f7a3a;
-  font-weight: 600;
+</style>
+x-width: 800px) {
+  .receitas {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .lista-receitas {
+    height: 200px;
+  }
+  .add-item {
+    flex-wrap: wrap;
+  }
 }
 </style>

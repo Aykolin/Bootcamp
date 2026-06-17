@@ -1,123 +1,76 @@
-// calc.js — as contas do Confeit-o-matic (conversão, custo, precificação, venda, caixa)
-
-const FATORES_BASE = {
-  kg: 1000,
-  g: 1,
-  L: 1000,
-  mL: 1,
-  duzia: 12,
-  un: 1,
-};
-
-const UNIDADE_BASE = {
-  kg: 'g',
-  g: 'g',
-  L: 'mL',
-  mL: 'mL',
-  duzia: 'un',
-  un: 'un',
-};
-
-/** Converte uma quantidade pra unidade base (g, mL ou un). */
+/**
+ * Converte uma quantidade (ex.: 500) de uma unidade (ex.: 'g')
+ * para a unidade base ('g', 'mL' ou 'unidade') e retorna { valor, unidadeBase }.
+ */
 function converterParaBase(quantidade, unidade) {
-  const fator = FATORES_BASE[unidade];
-  if (fator === undefined) {
-    throw new Error(`Unidade desconhecida: ${unidade}`);
-  }
+  const conversoes = {
+    // massa
+    kg: { fator: 1000, base: 'g' },
+    g: { fator: 1, base: 'g' },
+    // volume
+    L: { fator: 1000, base: 'mL' },
+    mL: { fator: 1, base: 'mL' },
+    // contagem
+    unidade: { fator: 1, base: 'unidade' },
+    un: { fator: 1, base: 'unidade' },
+  };
+
+  const c = conversoes[unidade];
+  if (!c) return { valor: quantidade, unidadeBase: unidade };
+
   return {
-    valor: quantidade * fator,
-    unidadeBase: UNIDADE_BASE[unidade],
+    valor: quantidade * c.fator,
+    unidadeBase: c.base,
   };
 }
 
-/** Custo da unidade base do insumo (preço por g/mL/un). */
-function custoBaseInsumo(insumo) {
+/** Custo da unidade base do ingrediente (preço por g/mL/unidade). */
+function custoBaseIngrediente(ingrediente) {
   const { valor: quantidadeBase } = converterParaBase(
-    insumo.quantidadeCompra,
-    insumo.unidadeCompra
+    ingrediente.quantidadeCompra,
+    ingrediente.unidadeCompra
   );
-  return insumo.precoCompra / quantidadeBase;
+  return ingrediente.precoCompra / quantidadeBase;
 }
 
-/** Custo de um item da receita (quantidade na base × custo base do insumo). */
-function custoItem(item, insumo) {
+/** Custo de um item da receita (quantidade na base × custo base do ingrediente). */
+function custoItem(item, ingrediente) {
   const { valor: quantidadeBase } = converterParaBase(item.quantidade, item.unidade);
-  return quantidadeBase * custoBaseInsumo(insumo);
+  return quantidadeBase * custoBaseIngrediente(ingrediente);
 }
 
 /**
- * Custo e preço de uma receita.
+ * Calcula o custo de uma receita.
  * @param {object} receita
- * @param {(id) => object} buscarInsumo
- * @param {object[]} custosFixos
- * @param {object} config
+ * @param {(id) => object} buscarIngrediente
+ * @param {number} markup
  */
-function calcularReceita(receita, buscarInsumo, custosFixos, config) {
-  const custoInsumos = receita.itens.reduce((soma, item) => {
-    const insumo = buscarInsumo(item.insumoId);
-    return insumo ? soma + custoItem(item, insumo) : soma;
+function calcularReceita(receita, buscarIngrediente, markup) {
+  const custoIngredientes = receita.itens.reduce((soma, item) => {
+    const ingrediente = buscarIngrediente(item.ingredienteId);
+    return ingrediente ? soma + custoItem(item, ingrediente) : soma;
   }, 0);
 
-  const totalFixos = custosFixos.reduce((soma, cf) => soma + cf.valorMensal, 0);
-  const producaoMensalEstimada = config.producaoMensalEstimada || 0;
-  const rateioFixos =
-    producaoMensalEstimada > 0
-      ? (totalFixos / producaoMensalEstimada) * receita.rendimento
-      : 0;
-
-  const custoTotal = custoInsumos + (receita.custosAdicionais || 0) + rateioFixos;
-  const precoSugerido = custoTotal * (1 + receita.margem / 100);
+  const m = markup || 2;
+  const custoTotal = custoIngredientes + (receita.custosAdicionais || 0);
+  const precoSugerido = custoTotal * m;
 
   return {
-    custoInsumos,
-    rateioFixos,
+    custoIngredientes,
     custoTotal,
     precoSugerido,
-    custoPorPorcao: custoTotal / receita.rendimento,
-    precoPorPorcao: precoSugerido / receita.rendimento,
   };
 }
 
-/**
- * Vende N lotes de uma receita: abate o estoque dos insumos e devolve o
- * lançamento de caixa correspondente. Não grava nada — quem chama decide
- * onde persistir.
- */
-function venderReceita(receita, buscarInsumo, quantidadeLotes, precoSugerido) {
+/** Vende N lotes de uma receita: abate o estoque dos ingredientes usados. */
+function venderReceita(receita, buscarIngrediente, quantidadeLotes) {
   receita.itens.forEach((item) => {
-    const insumo = buscarInsumo(item.insumoId);
-    if (!insumo) return;
+    const ingrediente = buscarIngrediente(item.ingredienteId);
+    if (!ingrediente) return;
+
     const { valor: quantidadeBase } = converterParaBase(item.quantidade, item.unidade);
-    insumo.estoque -= quantidadeBase * quantidadeLotes;
+    ingrediente.estoque -= quantidadeBase * quantidadeLotes;
   });
-
-  return {
-    id: Date.now().toString(),
-    tipo: 'entrada',
-    valor: precoSugerido * quantidadeLotes,
-    data: new Date().toISOString(),
-    categoria: 'venda',
-    descricao: receita.nome,
-  };
 }
 
-/** Totais do caixa pra um mês (formato "YYYY-MM"), a partir de lançamentos com `data` ISO. */
-function totaisCaixa(caixa, anoMes) {
-  const doMes = caixa.filter((lanc) => lanc.data.slice(0, 7) === anoMes);
-  const entradas = doMes
-    .filter((l) => l.tipo === 'entrada')
-    .reduce((soma, l) => soma + l.valor, 0);
-  const saidas = doMes
-    .filter((l) => l.tipo === 'saida')
-    .reduce((soma, l) => soma + l.valor, 0);
-  return { entradas, saidas, lucro: entradas - saidas };
-}
-
-export {
-  converterParaBase,
-  custoBaseInsumo,
-  custoItem,
-  calcularReceita,
-  venderReceita,
-  totaisCaixa,
-};
+export { converterParaBase, custoBaseIngrediente, custoItem, calcularReceita, venderReceita };

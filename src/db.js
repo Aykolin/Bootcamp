@@ -1,39 +1,53 @@
-// db.js — lê/grava as listas no electron-store.
-// Roda no processo de renderer (nodeIntegration: true, contextIsolation: false),
-// então dá pra falar com o electron-store direto, sem precisar de ponte/IPC.
-import Store from 'electron-store';
+const DB_KEY = 'confeitomatic_db';
 
-const store = new Store({ name: 'confeit-o-matic' });
-
-const padroes = {
-  insumos: [],
-  receitas: [],
-  custosFixos: [],
-  config: { producaoMensalEstimada: 0 },
-  caixa: [],
-};
-
-function get(chave) {
-  return store.get(chave, padroes[chave]);
+function get(key) {
+  const data = JSON.parse(localStorage.getItem(DB_KEY) || '{}');
+  return data[key] || (key === 'config' ? { markup: 2 } : []);
 }
 
-function set(chave, valor) {
-  store.set(chave, valor);
+function set(key, value) {
+  const data = JSON.parse(localStorage.getItem(DB_KEY) || '{}');
+  data[key] = value;
+  localStorage.setItem(DB_KEY, JSON.stringify(data));
 }
 
 export default {
-  getInsumos: () => get('insumos'),
-  setInsumos: (v) => set('insumos', v),
+  getConfig: () => get('config'),
+  setConfig: (v) => set('config', v),
+
+  getIngredientes: () => get('ingredientes'),
+  setIngredientes: (v) => set('ingredientes', v),
 
   getReceitas: () => get('receitas'),
   setReceitas: (v) => set('receitas', v),
 
-  getCustosFixos: () => get('custosFixos'),
-  setCustosFixos: (v) => set('custosFixos', v),
+  // Migração (opcional, mas bom para não perder dados existentes)
+  migrar() {
+    const data = JSON.parse(localStorage.getItem(DB_KEY) || '{}');
+    let mudou = false;
 
-  getConfig: () => get('config'),
-  setConfig: (v) => set('config', v),
+    if (data.insumos && !data.ingredientes) {
+      data.ingredientes = data.insumos;
+      delete data.insumos;
+      mudou = true;
+    }
 
-  getCaixa: () => get('caixa'),
-  setCaixa: (v) => set('caixa', v),
+    if (data.receitas) {
+      data.receitas.forEach((r) => {
+        if (r.itens) {
+          r.itens.forEach((item) => {
+            if (item.insumoId && !item.ingredienteId) {
+              item.ingredienteId = item.insumoId;
+              delete item.insumoId;
+              mudou = true;
+            }
+          });
+        }
+      });
+    }
+
+    if (mudou) {
+      localStorage.setItem(DB_KEY, JSON.stringify(data));
+    }
+  },
 };
