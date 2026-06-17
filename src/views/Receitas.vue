@@ -26,7 +26,7 @@
       <div class="card">
         <div class="campo">
           <label>Nome</label>
-          <input v-model="receitaSelecionada.nome" placeholder="Bolo de Cenoura"/>
+          <input v-model="receitaSelecionada.nome" placeholder="ex: Bolo de Cenoura"/>
         </div>
         <div class="flex-row">
           <div class="campo">
@@ -92,7 +92,7 @@
           <button type="submit" class="add-ingrediente" :disabled="!ingredientes.length">Adicionar Ingrediente</button>
         </form>
 
-        <p v-if="!ingredientes.length" class="dica">Cadastre ingredientes primeiro pra poder usá-los aqui.</p>
+        <p v-if="!ingredientes.length" class="dica">Cadastre ingredientes primeiro pra poder usar aqui</p>
       </div>
 
       <div class="card">
@@ -151,7 +151,6 @@ export default {
     return {
       receitas: db.getReceitas(),
       ingredientes: db.getIngredientes(),
-      config: db.getConfig(),
       receitaSelecionada: null,
       novoItem: { ingredienteId: '', quantidade: null, unidade: '' },
       unidadesRendimento: ['fatias', 'unidade', 'pedaços', 'cento', 'potes', 'caixas', 'kg', 'g'],
@@ -163,7 +162,7 @@ export default {
       return calcularReceita(
         this.receitaSelecionada,
         this.buscarIngrediente,
-        this.receitaSelecionada.markup || this.config.markup || 2
+        this.receitaSelecionada.markup || 2
       );
     },
     unidadeBaseNovoItem() {
@@ -238,6 +237,7 @@ export default {
   grid-template-columns: 280px 1fr;
   gap: 20px;
   height: calc(100vh - 120px);
+  max-width: 900px;
 }
 .lista-receitas {
   background: white;
@@ -256,7 +256,7 @@ export default {
 }
 .topo-lista h2 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.2rem;
 }
 .scroll-lista {
   flex: 1;
@@ -441,7 +441,7 @@ export default {
 .dica {
   font-size: 0.8rem;
   color: #d97a8c;
-  font-style: italic;
+  margin-left: 5px;
 }
 button {
   background: #d97a8c;

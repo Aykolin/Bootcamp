@@ -21,7 +21,6 @@
 </template>
 
 <script>
-import db from './db';
 import Ingredientes from './views/Ingredientes.vue';
 import Receitas from './views/Receitas.vue';
 
@@ -36,9 +35,6 @@ export default {
         { nome: 'Receitas', titulo: 'Receitas' },
       ],
     };
-  },
-  created() {
-    db.migrar();
   },
 };
 </script>

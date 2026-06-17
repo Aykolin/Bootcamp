@@ -18,6 +18,8 @@ function converterParaBase(quantidade, unidade) {
   const c = conversoes[unidade];
   if (!c) return { valor: quantidade, unidadeBase: unidade };
 
+  // multiplicação simples: quantidade na unidade original × fator de conversão
+  // ex.: 2 kg × 1000 = 2000 g
   return {
     valor: quantidade * c.fator,
     unidadeBase: c.base,
@@ -30,12 +32,16 @@ function custoBaseIngrediente(ingrediente) {
     ingrediente.quantidadeCompra,
     ingrediente.unidadeCompra
   );
+  // divisão: preço total pago ÷ quantidade total comprada (na unidade base)
+  // ex.: pacote de 1000 g custou R$10 → 10 / 1000 = R$0,01 por g
   return ingrediente.precoCompra / quantidadeBase;
 }
 
 /** Custo de um item da receita (quantidade na base × custo base do ingrediente). */
 function custoItem(item, ingrediente) {
   const { valor: quantidadeBase } = converterParaBase(item.quantidade, item.unidade);
+  // multiplicação: quantidade usada na receita (na base) × preço por unidade base
+  // ex.: 200 g usados × R$0,01/g = R$2,00
   return quantidadeBase * custoBaseIngrediente(ingrediente);
 }
 
@@ -46,13 +52,16 @@ function custoItem(item, ingrediente) {
  * @param {number} markup
  */
 function calcularReceita(receita, buscarIngrediente, markup) {
+  // soma (Σ) do custo de cada item da receita
   const custoIngredientes = receita.itens.reduce((soma, item) => {
     const ingrediente = buscarIngrediente(item.ingredienteId);
     return ingrediente ? soma + custoItem(item, ingrediente) : soma;
   }, 0);
 
+  // soma simples: custo dos ingredientes + custos extras (embalagem, energia, etc.)
   const m = markup || 2;
   const custoTotal = custoIngredientes + (receita.custosAdicionais || 0);
+  // preço sugerido = custo total × markup (ex.: markup 2 = preço cobre o custo e dobra como lucro)
   const precoSugerido = custoTotal * m;
 
   return {

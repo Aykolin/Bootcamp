@@ -1,11 +1,11 @@
 <template>
-  <div>
+  <div class="ingredientes">
     <h2>Ingredientes</h2>
 
     <form class="form-card" @submit.prevent="salvar">
       <div class="campo">
         <label>Nome</label>
-        <input v-model="formulario.nome" required placeholder="ex.: Arroz" />
+        <input v-model="formulario.nome" required placeholder="ex: Leite" />
       </div>
 
       <div class="campo">
@@ -191,13 +191,18 @@ export default {
 </script>
 
 <style scoped>
+.ingredientes {
+  max-width: 800px;
+  padding-inline: 16px;
+}
+
 .form-card {
   background: white;
   border-radius: 8px;
   padding: 16px;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px; /* Reduzido de 12px para 8px */
+  gap: 8px;
   align-items: flex-end;
   margin-bottom: 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -207,24 +212,24 @@ export default {
   flex-direction: column;
   gap: 2px;
   font-size: 0.85rem;
-  flex: 1 1 auto; /* Alterado de 200px para auto */
-  width: 100%; /* Garante que ocupe a largura total no mobile */
+  flex: 1 1 auto;
+  width: 100%;
   margin-bottom: 4px;
 }
 .campo input,
 .campo select {
-  padding: 8px 10px; /* Reduzido de 10px 12px para 8px 10px */
+  padding: 8px 10px;
   border: 1px solid #ddd;
   border-radius: 6px;
-  font-size: 0.95rem; /* Levemente menor para mobile */
+  font-size: 0.95rem;
 }
 .acoes-form {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 8px; /* Reduzido de 12px para 8px */
+  gap: 8px;
   width: 100%;
-  margin-top: 4px; /* Reduzido de 8px para 4px */
+  margin-top: 4px;
 }
 .custo-base-preview {
   font-size: 0.9rem;
@@ -249,7 +254,6 @@ button.perigo {
   background: #b3413a;
 }
 
-/* Lista Responsiva */
 .lista-container {
   display: flex;
   flex-direction: column;
@@ -325,7 +329,6 @@ button.perigo {
   align-self: flex-end;
 }
 
-/* Desktop Styles */
 @media (min-width: 768px) {
   .header-desktop {
     display: grid;
