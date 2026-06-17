@@ -25,17 +25,17 @@
     <div class="detalhe-receita" v-if="receitaSelecionada">
       <div class="card">
         <div class="campo">
-          <label>Nome da receita</label>
-          <input v-model="receitaSelecionada.nome" @change="salvar" />
+          <label>Nome</label>
+          <input v-model="receitaSelecionada.nome" placeholder="Bolo de Cenoura"/>
         </div>
         <div class="flex-row">
           <div class="campo">
             <label>Rende quanto? (ex: 10 fatias)</label>
-            <input type="number" v-model.number="receitaSelecionada.rendimento" @change="salvar" />
+            <input type="number" v-model.number="receitaSelecionada.rendimento" />
           </div>
           <div class="campo">
             <label>Unidade</label>
-            <select v-model="receitaSelecionada.unidadeRendimento" @change="salvar">
+            <select v-model="receitaSelecionada.unidadeRendimento">
               <option v-for="opt in unidadesRendimento" :key="opt" :value="opt">{{ opt }}</option>
             </select>
           </div>
@@ -89,7 +89,7 @@
 			    </span>
 			  </div>
 			</div>
-          <button type="submit" :disabled="!ingredientes.length">Adicionar Ingrediente</button>
+          <button type="submit" class="add-ingrediente" :disabled="!ingredientes.length">Adicionar Ingrediente</button>
         </form>
 
         <p v-if="!ingredientes.length" class="dica">Cadastre ingredientes primeiro pra poder usá-los aqui.</p>
@@ -106,7 +106,6 @@
               type="number"
               step="any"
               v-model.number="receitaSelecionada.custosAdicionais"
-              @change="salvar"
             />
           </div>
           <div class="campo-inline lucro-campo">
@@ -117,7 +116,6 @@
                 step="0.1"
                 min="1"
                 v-model.number="receitaSelecionada.markup"
-                @change="salvar"
               />
             </div>
           </div>
@@ -132,6 +130,10 @@
           </dd>
         </dl>
       </div>
+
+      <div class="rodape-detalhe">
+        <button class="btn-salvar" @click="salvar">Salvar receita</button>
+      </div>
     </div>
     <div class="sem-selecao" v-else>
       <p>Selecione uma receita ao lado ou crie uma nova.</p>
@@ -141,7 +143,7 @@
 
 <script>
 import db from '../db';
-import { calcularReceita, custoItem, venderReceita, converterParaBase } from '../calc';
+import { calcularReceita, custoItem, converterParaBase } from '../calc';
 
 export default {
   name: 'Receitas',
@@ -187,26 +189,23 @@ export default {
       );
     },
     selecionarReceita(r) {
-      this.receitaSelecionada = r;
+      this.receitaSelecionada = JSON.parse(JSON.stringify(r));
     },
     novaReceita() {
-      const nova = {
+      this.receitaSelecionada = {
         id: Date.now().toString(),
-        nome: 'Nova Receita',
+        nome: '',
         rendimento: 1,
         unidadeRendimento: 'unidade',
         itens: [],
         custosAdicionais: 0,
         markup: 2,
       };
-      this.receitas.push(nova);
-      this.receitaSelecionada = nova;
-      this.salvar();
     },
     excluirReceita(id) {
       this.receitas = this.receitas.filter((r) => r.id !== id);
       if (this.receitaSelecionada?.id === id) this.receitaSelecionada = null;
-      this.salvar();
+      db.setReceitas(this.receitas);
     },
     adicionarItem() {
       const ingrediente = this.buscarIngrediente(this.novoItem.ingredienteId);
@@ -214,15 +213,20 @@ export default {
         ...this.novoItem,
         unidade: converterParaBase(1, ingrediente.unidadeCompra).unidadeBase,
       });
-      this.salvar();
       this.novoItem = { ingredienteId: '', quantidade: null, unidade: '' };
     },
     removerItem(idx) {
       this.receitaSelecionada.itens.splice(idx, 1);
-      this.salvar();
     },
     salvar() {
+      const idx = this.receitas.findIndex((r) => r.id === this.receitaSelecionada.id);
+      if (idx >= 0) {
+        this.receitas.splice(idx, 1, this.receitaSelecionada);
+      } else {
+        this.receitas.push(this.receitaSelecionada);
+      }
       db.setReceitas(this.receitas);
+      this.receitaSelecionada = null;
     },
   },
 };
@@ -285,6 +289,14 @@ export default {
 .detalhe-receita {
   overflow-y: auto;
   padding-right: 4px;
+}
+.rodape-detalhe {
+  display: flex;
+  justify-content: flex-end;
+}
+.btn-salvar {
+  background: #2e7d32;
+  font-weight: bold;
 }
 .card {
   background: white;
@@ -372,7 +384,8 @@ export default {
   font-weight: bold;
   font-size: 1rem;
   color: #333;
-  margin-top: 8px;
+  margin-top: 4px;
+  margin-bottom: 4px;
 }
 .resumo .sugerido {
   font-weight: bold;
@@ -459,6 +472,11 @@ button:disabled {
   font-size: 0.9rem;
   color: #666;
   white-space: nowrap;
+}
+
+.add-ingrediente {
+	margin-top: 10px;
+	margin-left: auto;
 }
 
 @media (max-width: 800px) {

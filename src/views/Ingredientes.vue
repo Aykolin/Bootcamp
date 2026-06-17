@@ -52,7 +52,7 @@
         <span class="custo-base-preview" v-if="custoBaseFormulario !== null">
           Custo base: {{ formatarMoeda(custoBaseFormulario) }} / {{ unidadeBaseDoFormulario }}
         </span>
-        <button type="submit">{{ editandoId ? 'Salvar alterações' : 'Adicionar' }}</button>
+        <button class="submit" type="submit">{{ editandoId ? 'Salvar alterações' : 'Adicionar' }}</button>
         <button type="button" v-if="editandoId" @click="cancelar">Cancelar</button>
       </div>
     </form>
@@ -319,6 +319,10 @@ button.perigo {
 
 .desktop-only {
   display: none;
+}
+
+.submit {
+  align-self: flex-end;
 }
 
 /* Desktop Styles */

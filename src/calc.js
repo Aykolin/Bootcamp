@@ -62,15 +62,4 @@ function calcularReceita(receita, buscarIngrediente, markup) {
   };
 }
 
-/** Vende N lotes de uma receita: abate o estoque dos ingredientes usados. */
-function venderReceita(receita, buscarIngrediente, quantidadeLotes) {
-  receita.itens.forEach((item) => {
-    const ingrediente = buscarIngrediente(item.ingredienteId);
-    if (!ingrediente) return;
-
-    const { valor: quantidadeBase } = converterParaBase(item.quantidade, item.unidade);
-    ingrediente.estoque -= quantidadeBase * quantidadeLotes;
-  });
-}
-
-export { converterParaBase, custoBaseIngrediente, custoItem, calcularReceita, venderReceita };
+export { converterParaBase, custoBaseIngrediente, custoItem, calcularReceita };
