@@ -35,19 +35,9 @@
           </div>
           <div class="campo">
             <label>Unidade</label>
-            <div class="unidade-rendimento-wrap">
-              <select v-model="receitaSelecionada.unidadeRendimento" @change="salvar">
-                <option v-for="opt in unidadesRendimento" :key="opt" :value="opt">{{ opt }}</option>
-                <option value="custom">Outro...</option>
-              </select>
-              <input 
-                v-if="mostrarCustomUnidade" 
-                v-model="customUnidade" 
-                @blur="aplicarCustomUnidade"
-                placeholder="Qual?"
-                class="input-custom"
-              />
-            </div>
+            <select v-model="receitaSelecionada.unidadeRendimento" @change="salvar">
+              <option v-for="opt in unidadesRendimento" :key="opt" :value="opt">{{ opt }}</option>
+            </select>
           </div>
         </div>
       </div>
@@ -163,15 +153,9 @@ export default {
       receitaSelecionada: null,
       novoItem: { ingredienteId: '', quantidade: null, unidade: '' },
       unidadesRendimento: ['fatias', 'unidade', 'pedaços', 'cento', 'potes', 'caixas', 'kg', 'g'],
-      customUnidade: '',
     };
   },
   computed: {
-    mostrarCustomUnidade() {
-      return this.receitaSelecionada && 
-             (this.receitaSelecionada.unidadeRendimento === 'custom' || 
-              !this.unidadesRendimento.includes(this.receitaSelecionada.unidadeRendimento));
-    },
     resultadoPreco() {
       if (!this.receitaSelecionada) return {};
       return calcularReceita(
@@ -237,13 +221,6 @@ export default {
       this.receitaSelecionada.itens.splice(idx, 1);
       this.salvar();
     },
-    aplicarCustomUnidade() {
-      if (this.customUnidade.trim()) {
-        this.receitaSelecionada.unidadeRendimento = this.customUnidade.trim();
-        this.customUnidade = '';
-        this.salvar();
-      }
-    },
     salvar() {
       db.setReceitas(this.receitas);
     },
@@ -252,14 +229,6 @@ export default {
 </script>
 
 <style scoped>
-.unidade-rendimento-wrap {
-  display: flex;
-  gap: 4px;
-}
-.input-custom {
-  width: 80px !important;
-  padding: 4px 8px !important;
-}
 .receitas {
   display: grid;
   grid-template-columns: 280px 1fr;
