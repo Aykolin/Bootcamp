@@ -61,6 +61,7 @@ body {
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
+  justify-content: space-between;
 }
 .topo h1 {
   margin: 0;

@@ -297,6 +297,7 @@ export default {
 .btn-salvar {
   background: #2e7d32;
   font-weight: bold;
+  height: 42px;
 }
 .card {
   background: white;
@@ -423,17 +424,6 @@ export default {
   padding-top: 16px;
   border-top: 2px dashed #eee;
 }
-.btn-venda {
-  width: 100%;
-  background: #2e7d32;
-  color: white;
-  border: none;
-  padding: 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: bold;
-  margin-top: 8px;
-}
 .btn-mini {
   padding: 2px 6px;
   font-size: 0.8rem;
@@ -498,6 +488,25 @@ button:disabled {
 	width: 100%;
   }
 
+  .detalhe-receita {
+    padding-bottom: 72px;
+  }
+
+  .rodape-detalhe {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 0;
+    padding: 12px 16px;
+    background: white;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+  }
+
+  .btn-salvar {
+    width: 100%;
+  }
 }
 </style>
 

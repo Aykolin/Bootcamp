@@ -195,6 +195,11 @@ export default {
   max-width: 800px;
 }
 
+h2 {
+	font-size: 1.3rem;
+	margin-top: 10px;
+}
+
 .form-card {
   background: white;
   border-radius: 8px;
