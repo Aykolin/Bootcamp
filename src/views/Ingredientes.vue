@@ -39,21 +39,34 @@
 
       <div class="campo">
         <label>Estoque ({{ unidadeBaseDoFormulario }})</label>
-        <input
-          type="number"
-          min="0"
-          step="any"
-          v-model.number="formulario.estoque"
-          required
-        />
+        <div class="estoque-com-acao">
+          <input
+            type="number"
+            min="0"
+            step="any"
+            v-model.number="formulario.estoque"
+            required
+          />
+          <button
+            type="button"
+            class="repor"
+            v-if="editandoId"
+            :disabled="!formulario.quantidadeCompra"
+            @click="reporEstoque"
+          >
+            + repor com a compra
+          </button>
+        </div>
       </div>
 
       <div class="acoes-form">
         <span class="custo-base-preview" v-if="custoBaseFormulario !== null">
           Custo base: {{ formatarMoeda(custoBaseFormulario) }} / {{ unidadeBaseDoFormulario }}
         </span>
-        <button class="submit" type="submit">{{ editandoId ? 'Salvar alterações' : 'Adicionar' }}</button>
-        <button type="button" v-if="editandoId" @click="cancelar">Cancelar</button>
+		<div class="acoes-form-btns">
+			<button type="button" v-if="editandoId" @click="cancelar">Cancelar</button>
+			<button class="submit" type="submit">{{ editandoId ? 'Salvar alterações' : 'Adicionar ingrediente' }}</button>
+		</div>
       </div>
     </form>
 
@@ -95,8 +108,8 @@
         </div>
 
         <div class="acoes-linha">
-          <button @click="editar(i)">Editar</button>
           <button class="perigo" @click="excluir(i.id)">Excluir</button>
+          <button @click="editar(i)">Editar</button>
         </div>
       </div>
     </div>
@@ -148,6 +161,13 @@ export default {
       return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
         valor || 0
       );
+    },
+    reporEstoque() {
+      const { valor } = converterParaBase(
+        this.formulario.quantidadeCompra,
+        this.formulario.unidadeCompra
+      );
+      this.formulario.estoque = (this.formulario.estoque || 0) + valor;
     },
     salvar() {
       const ingredienteParaSalvar = { ...this.formulario };
@@ -227,14 +247,35 @@ h2 {
   border-radius: 6px;
   font-size: 0.95rem;
 }
+.estoque-com-acao {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.estoque-com-acao input {
+  flex: 1;
+}
+.estoque-com-acao .repor {
+  white-space: nowrap;
+  padding: 8px 10px;
+  font-size: 0.8rem;
+  background: #2e7d32;
+}
 .acoes-form {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: flex-end;
   gap: 8px;
   width: 100%;
   margin-top: 4px;
 }
+
+.acoes-form-btns {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
 .custo-base-preview {
   font-size: 0.9rem;
   color: #d97a8c;

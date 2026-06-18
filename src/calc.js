@@ -71,4 +71,38 @@ function calcularReceita(receita, buscarIngrediente, markup) {
   };
 }
 
-export { converterParaBase, custoBaseIngrediente, custoItem, calcularReceita };
+/**
+ * Verifica se há estoque suficiente de todos os ingredientes para vender N lotes da receita.
+ * Retorna a lista de ingredientes com estoque insuficiente (vazia se houver estoque pra todos).
+ */
+function ingredientesFaltantes(receita, buscarIngrediente, quantidadeLotes) {
+  return receita.itens.reduce((faltantes, item) => {
+    const ingrediente = buscarIngrediente(item.ingredienteId);
+    if (!ingrediente) return faltantes;
+
+    const { valor: quantidadeBase } = converterParaBase(item.quantidade, item.unidade);
+    const necessario = quantidadeBase * quantidadeLotes;
+    if (necessario > ingrediente.estoque) faltantes.push(ingrediente);
+    return faltantes;
+  }, []);
+}
+
+/** Vende N lotes de uma receita: abate o estoque dos ingredientes usados. */
+function venderReceita(receita, buscarIngrediente, quantidadeLotes) {
+  receita.itens.forEach((item) => {
+    const ingrediente = buscarIngrediente(item.ingredienteId);
+    if (!ingrediente) return;
+
+    const { valor: quantidadeBase } = converterParaBase(item.quantidade, item.unidade);
+    ingrediente.estoque -= quantidadeBase * quantidadeLotes;
+  });
+}
+
+export {
+  converterParaBase,
+  custoBaseIngrediente,
+  custoItem,
+  calcularReceita,
+  ingredientesFaltantes,
+  venderReceita,
+};

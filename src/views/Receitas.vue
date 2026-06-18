@@ -128,7 +128,23 @@
           <dd class="unitario">
             {{ formatarMoeda(resultadoPreco.custoTotal / (receitaSelecionada.rendimento || 1)) }}
           </dd>
+          <dt class="unitario">Preço sugerido por {{ receitaSelecionada.unidadeRendimento }}</dt>
+          <dd class="unitario sugerido-unitario">
+            {{ formatarMoeda(resultadoPreco.precoSugerido / (receitaSelecionada.rendimento || 1)) }}
+          </dd>
         </dl>
+      </div>
+
+      <div class="card venda-estoque" v-if="receitaJaSalva">
+        <h3>Registrar venda</h3>
+        <div class="venda-form">
+          <div class="campo">
+            <label>Quantidade vendida (lotes da receita)</label>
+            <input type="number" min="1" step="1" v-model.number="quantidadeVendida" />
+          </div>
+          <button class="btn-venda" @click="registrarVenda">Registrar venda e baixar estoque</button>
+        </div>
+        <p v-if="mensagemVenda" class="mensagem-venda">{{ mensagemVenda }}</p>
       </div>
 
       <div class="rodape-detalhe">
@@ -143,7 +159,13 @@
 
 <script>
 import db from '../db';
-import { calcularReceita, custoItem, converterParaBase } from '../calc';
+import {
+  calcularReceita,
+  custoItem,
+  converterParaBase,
+  ingredientesFaltantes,
+  venderReceita,
+} from '../calc';
 
 export default {
   name: 'Receitas',
@@ -154,6 +176,8 @@ export default {
       receitaSelecionada: null,
       novoItem: { ingredienteId: '', quantidade: null, unidade: '' },
       unidadesRendimento: ['fatias', 'unidade', 'pedaços', 'cento', 'potes', 'caixas', 'kg', 'g'],
+      quantidadeVendida: 1,
+      mensagemVenda: '',
     };
   },
   computed: {
@@ -168,6 +192,9 @@ export default {
     unidadeBaseNovoItem() {
       const ingrediente = this.ingredientes.find((i) => i.id === this.novoItem.ingredienteId);
       return ingrediente ? converterParaBase(1, ingrediente.unidadeCompra).unidadeBase : '';
+    },
+    receitaJaSalva() {
+      return this.receitas.some((r) => r.id === this.receitaSelecionada.id);
     },
   },
   methods: {
@@ -216,6 +243,24 @@ export default {
     },
     removerItem(idx) {
       this.receitaSelecionada.itens.splice(idx, 1);
+    },
+    registrarVenda() {
+      const lotes = this.quantidadeVendida;
+      if (!lotes || lotes <= 0) {
+        this.mensagemVenda = 'Informe uma quantidade válida de lotes vendidos.';
+        return;
+      }
+
+      const faltantes = ingredientesFaltantes(this.receitaSelecionada, this.buscarIngrediente, lotes);
+      if (faltantes.length) {
+        this.mensagemVenda = `Estoque insuficiente de: ${faltantes.map((i) => i.nome).join(', ')}.`;
+        return;
+      }
+
+      venderReceita(this.receitaSelecionada, this.buscarIngrediente, lotes);
+      db.setIngredientes(this.ingredientes);
+      this.mensagemVenda = `Venda de ${lotes} lote(s) registrada. Estoque atualizado.`;
+      this.quantidadeVendida = 1;
     },
     salvar() {
       const idx = this.receitas.findIndex((r) => r.id === this.receitaSelecionada.id);
@@ -397,6 +442,10 @@ export default {
   font-size: 0.8rem;
   color: #888;
 }
+.resumo .sugerido-unitario {
+  color: #2e7d32;
+  font-weight: bold;
+}
 .campo-inline {
   display: flex;
   justify-content: space-between;
@@ -420,9 +469,25 @@ export default {
   color: #d97a8c;
 }
 .venda-estoque {
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 2px dashed #eee;
+  margin-top: 0;
+}
+.venda-form {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+.venda-form .campo {
+  margin-bottom: 0;
+  flex: 1;
+}
+.btn-venda {
+  background: #2e7d32;
+  height: 40px;
+}
+.mensagem-venda {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: #b3413a;
 }
 .btn-mini {
   padding: 2px 6px;
